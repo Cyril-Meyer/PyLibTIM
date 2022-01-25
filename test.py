@@ -49,7 +49,7 @@ if TEST_AREA_FILTERING:
     t0 = time.time()
     tim.area_filtering(S[0], S[1], S[2], I, 1000000, connexity)
     t1 = time.time()
-16
+
     print(t1-t0)
     print(I.shape, I.dtype, I.min(), I.max())
     axs[1, 1].imshow(I[16], cmap='gray')
