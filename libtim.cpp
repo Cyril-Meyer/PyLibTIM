@@ -56,9 +56,9 @@ void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area, i
   Image<U8> im(size);
 
 	for (py::ssize_t i = 0; i < r.shape(0); i++)
-			for (py::ssize_t j = 0; j < r.shape(1); j++)
-					for (py::ssize_t k = 0; k < r.shape(2); k++)
-							im(i, j, k) = r(i, j, k);
+		for (py::ssize_t j = 0; j < r.shape(1); j++)
+			for (py::ssize_t k = 0; k < r.shape(2); k++)
+				im(i, j, k) = r(i, j, k);
 
   // Construction du component-tree
 	FlatSE connexity = getFlatSE(connexity_id);
@@ -71,13 +71,53 @@ void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area, i
   Image<U8> res = tree.constructImage(ComponentTree<U8>::DIRECT);
 
 	for (py::ssize_t i = 0; i < r.shape(0); i++)
-			for (py::ssize_t j = 0; j < r.shape(1); j++)
-					for (py::ssize_t k = 0; k < r.shape(2); k++)
-							r(i, j, k) = (uint8_t)res(i, j, k);
+		for (py::ssize_t j = 0; j < r.shape(1); j++)
+			for (py::ssize_t k = 0; k < r.shape(2); k++)
+				r(i, j, k) = (uint8_t)res(i, j, k);
+}
+
+void attribute_image(int x, int y, int z, py::array_t<uint8_t> image, py::array_t<double> image_attr, int connexity_id)
+{
+	auto r = image.mutable_unchecked<3>();
+	auto r_attr = image_attr.mutable_unchecked<4>();
+
+  // Image
+  // TSize size[] = {x, y, z};
+  // TSpacing spacing[] = {1.0, 1.0, 1.0};
+  // const U8 data[] = {0, 1, 2, 3, 4, ...}
+	TSize size[] = {(short unsigned int)x,
+								  (short unsigned int)y,
+									(short unsigned int)z};
+  Image<U8> im(size);
+
+	for (py::ssize_t i = 0; i < r.shape(0); i++)
+		for (py::ssize_t j = 0; j < r.shape(1); j++)
+			for (py::ssize_t k = 0; k < r.shape(2); k++)
+				im(i, j, k) = r(i, j, k);
+
+  // Construction du component-tree
+	FlatSE connexity = getFlatSE(connexity_id);
+	ComponentTree<U8> tree(im, connexity);
+
+	// Reconstruction d'une image à partir de la valeur des attributs
+	// construction de la liste des noeuds
+	std::vector<Node *> nodes = tree.indexedNodes();
+	for (py::ssize_t i = 0; i < r.shape(0); i++)
+		for (py::ssize_t j = 0; j < r.shape(1); j++)
+			for (py::ssize_t k = 0; k < r.shape(2); k++)
+				{
+					r_attr(i, j, k, 0) = tree.indexedCoordToNode(i, j, k, nodes)->area;
+					r_attr(i, j, k, 1) = tree.indexedCoordToNode(i, j, k, nodes)->volume;
+					r_attr(i, j, k, 2) = tree.indexedCoordToNode(i, j, k, nodes)->contrast;
+					r_attr(i, j, k, 3) = tree.indexedCoordToNode(i, j, k, nodes)->contourLength;
+					r_attr(i, j, k, 4) = tree.indexedCoordToNode(i, j, k, nodes)->complexity;
+					r_attr(i, j, k, 5) = tree.indexedCoordToNode(i, j, k, nodes)->compacity;
+				}
 }
 
 PYBIND11_MODULE(libtim, m)
 {
   m.doc() = "libtim";
   m.def("area_filtering", &area_filtering);
+  m.def("attribute_image", &attribute_image);
 }
