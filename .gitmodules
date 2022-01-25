@@ -1,0 +1,3 @@
+[submodule "libtim"]
+	path = libtim
+	url = https://github.com/Cyril-Meyer/libtim
