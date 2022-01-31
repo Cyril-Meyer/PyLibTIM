@@ -76,7 +76,7 @@ void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area, i
 				r(i, j, k) = (uint8_t)res(i, j, k);
 }
 
-void attribute_image(int x, int y, int z, py::array_t<uint8_t> image, py::array_t<double> image_attr, int connexity_id)
+void attribute_image(int x, int y, int z, py::array_t<uint8_t> image, py::array_t<int> image_attr, int connexity_id)
 {
 	auto r = image.mutable_unchecked<3>();
 	auto r_attr = image_attr.mutable_unchecked<4>();
@@ -106,12 +106,19 @@ void attribute_image(int x, int y, int z, py::array_t<uint8_t> image, py::array_
 		for (py::ssize_t j = 0; j < r.shape(1); j++)
 			for (py::ssize_t k = 0; k < r.shape(2); k++)
 				{
+					/*
 					r_attr(i, j, k, 0) = tree.indexedCoordToNode(i, j, k, nodes)->area;
 					r_attr(i, j, k, 1) = tree.indexedCoordToNode(i, j, k, nodes)->volume;
 					r_attr(i, j, k, 2) = tree.indexedCoordToNode(i, j, k, nodes)->contrast;
 					r_attr(i, j, k, 3) = tree.indexedCoordToNode(i, j, k, nodes)->contourLength;
 					r_attr(i, j, k, 4) = tree.indexedCoordToNode(i, j, k, nodes)->complexity;
 					r_attr(i, j, k, 5) = tree.indexedCoordToNode(i, j, k, nodes)->compacity;
+					r_attr(i, j, k, 6) = tree.indexedCoordToNode(i, j, k, nodes)->subNodes;
+					*/
+					r_attr(i, j, k, 0) = tree.indexedCoordToNode(i, j, k, nodes)->area;
+					r_attr(i, j, k, 1) = tree.indexedCoordToNode(i, j, k, nodes)->contrast;
+					r_attr(i, j, k, 2) = tree.indexedCoordToNode(i, j, k, nodes)->contourLength;
+					r_attr(i, j, k, 3) = tree.indexedCoordToNode(i, j, k, nodes)->subNodes;
 				}
 }
 
