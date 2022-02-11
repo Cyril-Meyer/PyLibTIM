@@ -18,6 +18,7 @@ namespace py = pybind11;
 enum ConnexityID { C2DN4, C2DN8, C3DN6, C3DN18, C3DN26 };
 enum AttributeID {
   AREA,
+  MSER,
   CONTRAST,
   VOLUME,
   CONTOUR_LENGTH,
@@ -56,6 +57,8 @@ int getAttribute(Node *n, AttributeID attribute_id) {
   switch (attribute_id) {
     case AREA:
       return (int)n->area;
+    case MSER:
+      return (int)n->mser;
     case CONTRAST:
       return (int)n->contrast;
     case VOLUME:
@@ -170,6 +173,7 @@ PYBIND11_MODULE(libtim, m) {
 
   py::enum_<AttributeID>(m, "AttributeID")
       .value("AREA", AREA)
+      .value("MSER", MSER)
       .value("CONTRAST", CONTRAST)
       .value("VOLUME", VOLUME)
       .value("CONTOUR_LENGTH", CONTOUR_LENGTH)
