@@ -53,24 +53,24 @@ FlatSE getFlatSE(int connexity_id) {
   return connexity;
 }
 
-int getAttribute(Node *n, AttributeID attribute_id) {
+long getAttribute(Node *n, AttributeID attribute_id) {
   switch (attribute_id) {
     case AREA:
-      return (int)n->area;
+      return (long)n->area;
     case MSER:
-      return (int)n->mser;
+      return (long)((long)n->mser)*10000L;
     case CONTRAST:
-      return (int)n->contrast;
+      return (long)n->contrast;
     case VOLUME:
-      return (int)n->volume;
+      return (long)n->volume;
     case CONTOUR_LENGTH:
-      return (int)n->contourLength;
+      return (long)n->contourLength;
     case COMPLEXITY:
-      return (int)n->complexity;
+      return (long)n->complexity;
     case COMPACITY:
-      return (int)n->compacity;
+      return (long)n->compacity;
     case HU_INVARIANT_MOMENT:
-        return (int)n->I;
+        return (long)n->I;
   }
   return 0;
 }
@@ -108,7 +108,7 @@ void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area,
 }
 
 void attribute_image(int x, int y, int z, py::array_t<uint8_t> image,
-                     py::array_t<int> image_attr, ConnexityID connexity_id,
+                     py::array_t<long> image_attr, ConnexityID connexity_id,
                      AttributeID attribute_id,
                      AttributeValID attribute_val_id) {
   auto r = image.mutable_unchecked<3>();
@@ -137,7 +137,7 @@ void attribute_image(int x, int y, int z, py::array_t<uint8_t> image,
     for (py::ssize_t j = 0; j < r.shape(1); j++)
       for (py::ssize_t k = 0; k < r.shape(2); k++) {
         Node *n = tree.indexedCoordToNode(i, j, k, nodes);
-        int attr = getAttribute(n, attribute_id);
+        long attr = getAttribute(n, attribute_id);
 
         if (attribute_val_id == NODE) {
           // nothing.
