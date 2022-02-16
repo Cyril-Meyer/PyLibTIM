@@ -53,24 +53,37 @@ FlatSE getFlatSE(int connexity_id) {
   return connexity;
 }
 
-long getAttribute(Node *n, AttributeID attribute_id) {
+int longToInt(long a)
+{
+    return std::max(std::min(a, (long)std::numeric_limits<int>::max()), (long)std::numeric_limits<int>::min());
+}
+
+int doubleToInt(double a, long m=1000)
+{
+    if (a != -1.0)
+        return std::max(std::min(longToInt((long)(m*a)), std::numeric_limits<int>::max()), std::numeric_limits<int>::min());
+    else
+        return std::numeric_limits<int>::max();
+}
+
+int getAttribute(Node *n, AttributeID attribute_id) {
   switch (attribute_id) {
     case AREA:
-      return (long)n->area;
+      return longToInt(n->area);
     case MSER:
-      return (long)(n->mser*10000L);
+      return doubleToInt(n->mser);
     case CONTRAST:
-      return (long)n->contrast;
+      return n->contrast;
     case VOLUME:
-      return (long)n->volume;
+      return n->volume;
     case CONTOUR_LENGTH:
-      return (long)n->contourLength;
+      return n->contourLength;
     case COMPLEXITY:
-      return (long)n->complexity;
+      return n->complexity;
     case COMPACITY:
-      return (long)n->compacity;
+      return n->compacity;
     case HU_INVARIANT_MOMENT:
-        return (long)n->I;
+        return (int)n->I;
   }
   return 0;
 }
@@ -108,7 +121,7 @@ void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area,
 }
 
 void attribute_image(int x, int y, int z, py::array_t<uint8_t> image,
-                     py::array_t<long> image_attr, ConnexityID connexity_id,
+                     py::array_t<int> image_attr, ConnexityID connexity_id,
                      AttributeID attribute_id,
                      AttributeValID attribute_val_id) {
   auto r = image.mutable_unchecked<3>();
@@ -137,7 +150,7 @@ void attribute_image(int x, int y, int z, py::array_t<uint8_t> image,
     for (py::ssize_t j = 0; j < r.shape(1); j++)
       for (py::ssize_t k = 0; k < r.shape(2); k++) {
         Node *n = tree.indexedCoordToNode(i, j, k, nodes);
-        long attr = getAttribute(n, attribute_id);
+        int attr = getAttribute(n, attribute_id);
 
         if (attribute_val_id == NODE) {
           // nothing.
