@@ -58,7 +58,7 @@ long getAttribute(Node *n, AttributeID attribute_id) {
     case AREA:
       return (long)n->area;
     case MSER:
-      return (long)((long)n->mser)*10000L;
+      return (long)(n->mser*10000L);
     case CONTRAST:
       return (long)n->contrast;
     case VOLUME:
