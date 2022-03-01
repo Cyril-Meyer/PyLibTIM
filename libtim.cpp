@@ -23,10 +23,14 @@ enum AttributeID {
   VOLUME,
   CONTOUR_LENGTH,
   COMPLEXITY,
-  COMPACITY,
-  HU_INVARIANT_MOMENT
+  COMPACITY
 };
-enum AttributeValID { NODE, MAX_PARENTS, MIN_PARENTS };
+
+enum AttributeSelectionRule {
+  NODE,
+  MIN,
+  MAX
+};
 
 FlatSE getFlatSE(int connexity_id) {
   FlatSE connexity;
@@ -53,25 +57,17 @@ FlatSE getFlatSE(int connexity_id) {
   return connexity;
 }
 
-int longToInt(long a)
+int32_t int64Toint32(int64_t a)
 {
-    return std::max(std::min(a, (long)std::numeric_limits<int>::max()), (long)std::numeric_limits<int>::min());
-}
-
-int doubleToInt(double a, long m=1000)
-{
-    if (a != -1.0)
-        return std::max(std::min(longToInt((long)(m*a)), std::numeric_limits<int>::max()), std::numeric_limits<int>::min());
-    else
-        return std::numeric_limits<int>::max();
+    return (int32_t)std::max(std::min(a, (int64_t)std::numeric_limits<int32_t>::max()), (int64_t)std::numeric_limits<int32_t>::min());
 }
 
 int getAttribute(Node *n, AttributeID attribute_id) {
   switch (attribute_id) {
     case AREA:
-      return longToInt(n->area);
+      return int64Toint32(n->area);
     case MSER:
-      return doubleToInt(n->mser);
+      return int64Toint32(n->mser);
     case CONTRAST:
       return n->contrast;
     case VOLUME:
@@ -82,8 +78,6 @@ int getAttribute(Node *n, AttributeID attribute_id) {
       return n->complexity;
     case COMPACITY:
       return n->compacity;
-    case HU_INVARIANT_MOMENT:
-        return (int)n->I;
   }
   return 0;
 }
@@ -122,8 +116,9 @@ void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area,
 
 void attribute_image(int x, int y, int z, py::array_t<uint8_t> image,
                      py::array_t<int> image_attr, ConnexityID connexity_id,
-                     AttributeID attribute_id,
-                     AttributeValID attribute_val_id) {
+                     AttributeID value_attribute,
+                     AttributeID selection_attribute, unsigned int delta,
+                     AttributeSelectionRule selection_rule=NODE) {
   auto r = image.mutable_unchecked<3>();
   auto r_attr = image_attr.mutable_unchecked<3>();
 
@@ -141,7 +136,7 @@ void attribute_image(int x, int y, int z, py::array_t<uint8_t> image,
 
   // Construction du component-tree
   FlatSE connexity = getFlatSE(connexity_id);
-  ComponentTree<U8> tree(im, connexity);
+  ComponentTree<U8> tree(im, connexity, delta);
 
   // Reconstruction d'une image à partir de la valeur des attributs
   // construction de la liste des noeuds
@@ -149,25 +144,46 @@ void attribute_image(int x, int y, int z, py::array_t<uint8_t> image,
   for (py::ssize_t i = 0; i < r.shape(0); i++)
     for (py::ssize_t j = 0; j < r.shape(1); j++)
       for (py::ssize_t k = 0; k < r.shape(2); k++) {
+        int attr;
         Node *n = tree.indexedCoordToNode(i, j, k, nodes);
-        int attr = getAttribute(n, attribute_id);
+        // noeud selectionné
+        Node *n_s = n;
+        if(selection_rule != NODE)
+        {
+            // remplacer par l'attribut souhaité
+            attr = getAttribute(n, selection_attribute);
 
-        if (attribute_val_id == NODE) {
-          // nothing.
-        } else if (attribute_val_id == MAX_PARENTS) {
-          while (n->father != tree.m_root) {
-            n = n->father;
-            attr = std::max(attr, getAttribute(n, attribute_id));
-          }
-          attr = std::max(attr, getAttribute(n, attribute_id));
-        } else if (attribute_val_id == MIN_PARENTS) {
-          while (n->father != tree.m_root) {
-            n = n->father;
-            attr = std::min(attr, getAttribute(n, attribute_id));
-          }
-          attr = std::min(attr, getAttribute(n, attribute_id));
+            // maximum / minimum, dans la branche parent
+            int attr_father;
+            // parcours de l'arbre
+            while(n->father != tree.m_root) {
+                n = n->father;
+                attr_father = getAttribute(n, selection_attribute);
+
+                if(attr == attr_father) {}
+                // maximise attribute (be carefule to infinity)
+                else if(selection_rule == MAX && attr_father > attr &&
+                        attr_father < std::numeric_limits<int32_t>::max()-10)
+                {
+                    n_s = n;
+                    attr = attr_father;
+                }
+                // minimize attribute
+                else if(selection_rule == MIN && attr_father < attr &&
+                        attr_father >= 0)
+                {
+                    n_s = n;
+                    attr = attr_father;
+                }
+            }
+            if(attr < 0)
+            {
+                std::cout << "ERROR: NEGATIVE SELECTION ATTRIBUTE" << attr << std::endl;
+                exit(1);
+            }
         }
-        r_attr(i, j, k) = attr;
+
+        r_attr(i, j, k) = getAttribute(n_s, value_attribute);;
       }
 }
 
@@ -192,12 +208,11 @@ PYBIND11_MODULE(libtim, m) {
       .value("CONTOUR_LENGTH", CONTOUR_LENGTH)
       .value("COMPLEXITY", COMPLEXITY)
       .value("COMPACITY", COMPACITY)
-      .value("HU_INVARIANT_MOMENT", HU_INVARIANT_MOMENT)
       .export_values();
 
-  py::enum_<AttributeValID>(m, "AttributeValID")
+  py::enum_<AttributeSelectionRule>(m, "AttributeSelectionRule")
       .value("NODE", NODE)
-      .value("MAX_PARENTS", MAX_PARENTS)
-      .value("MIN_PARENTS", MIN_PARENTS)
+      .value("MIN", MIN)
+      .value("MAX", MAX)
       .export_values();
 }
