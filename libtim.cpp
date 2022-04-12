@@ -47,7 +47,7 @@ int32_t int64Toint32(int64_t a)
     return (int32_t)std::max(std::min(a, (int64_t)std::numeric_limits<int32_t>::max()), (int64_t)std::numeric_limits<int32_t>::min());
 }
 
-void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area,
+void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area_min, int area_max,
                     int connexity_id) {
   auto r = image.mutable_unchecked<3>();
 
@@ -68,7 +68,7 @@ void area_filtering(int x, int y, int z, py::array_t<uint8_t> image, int area,
   ComponentTree<U8> tree(im, connexity);
 
   // Elagage de l'arbre
-  tree.areaFiltering(area);
+  tree.areaFiltering(area_min, area_max);
 
   // Reconstruction d'une image à partir de l'arbre élagué
   Image<U8> res = tree.constructImage(ComponentTree<U8>::DIRECT);
@@ -128,10 +128,23 @@ PYBIND11_MODULE(libtim, m) {
       .export_values();
 
   py::enum_<ComponentTree<U8>::Attribute>(m, "AttributeID")
+      .value("H", ComponentTree<U8>::H)
       .value("AREA", ComponentTree<U8>::AREA)
+      .value("AREA_D_AREAN_H", ComponentTree<U8>::AREA_D_AREAN_H)
+      .value("AREA_D_AREAN_H_D", ComponentTree<U8>::AREA_D_AREAN_H_D)
+      .value("AREA_D_H", ComponentTree<U8>::AREA_D_H)
+      .value("AREA_D_AREAN", ComponentTree<U8>::AREA_D_AREAN)
       .value("MSER", ComponentTree<U8>::MSER)
+      .value("AREA_D_DELTA_H", ComponentTree<U8>::AREA_D_DELTA_H)
+      .value("AREA_D_DELTA_AREAF", ComponentTree<U8>::AREA_D_DELTA_AREAF)
+      .value("MEAN", ComponentTree<U8>::MEAN)
+      .value("VARIANCE", ComponentTree<U8>::VARIANCE)
+      .value("MEAN_NGHB", ComponentTree<U8>::MEAN_NGHB)
+      .value("VARIANCE_NGHB", ComponentTree<U8>::VARIANCE_NGHB)
+      .value("OTSU", ComponentTree<U8>::OTSU)
       .value("CONTRAST", ComponentTree<U8>::CONTRAST)
       .value("VOLUME", ComponentTree<U8>::VOLUME)
+      .value("MGB", ComponentTree<U8>::MGB)
       .value("CONTOUR_LENGTH", ComponentTree<U8>::CONTOUR_LENGTH)
       .value("COMPLEXITY", ComponentTree<U8>::COMPLEXITY)
       .value("COMPACITY", ComponentTree<U8>::COMPACITY)
